@@ -16,7 +16,7 @@ function Tile({ label, value, to, icon: Icon, alert }) {
 }
 
 export default function Dashboard() {
-  const { data: d, isLoading, error } = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get('/admin/dashboard'), refetchInterval: 30000 });
+  const { data: d, isLoading, error } = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get('/admin/dashboard'), refetchInterval: 10000 });
   if (isLoading) return <PageLoader />;
   if (error) return <ErrorState error={error} />;
   const c = d.counts;

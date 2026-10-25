@@ -24,7 +24,7 @@ const ASSIGNABLE = ['confirmed', 'driver_assigned', 'on_the_way', 'arrived', 'st
 export default function BookingDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ['booking', id, 'admin'], queryFn: () => api.get(`/bookings/${id}`), refetchInterval: 20000 });
+  const q = useQuery({ queryKey: ['booking', id, 'admin'], queryFn: () => api.get(`/bookings/${id}`), refetchInterval: 8000 });
   const [modal, setModal] = useState(null);
   const set = (b) => { qc.setQueryData(['booking', id, 'admin'], b); ['bookings', 'dashboard', 'calendar', 'payments'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); };
   const useAct = (path, opts = {}) => useAction((body) => api.post(`/bookings/${id}${path}`, body), { ...opts, onSuccess: (b, v) => { set(b.booking || b); setModal(null); opts.onSuccess?.(b, v); } });
@@ -185,7 +185,7 @@ function LegPanel({ b, leg, onChange }) {
           ) : leg.external_operator_id ? (
             <div className="mt-1 text-sm"><div className="font-semibold">External: {leg.operator_name}</div><div className="text-muted-foreground">{leg.external_driver_name || 'Driver TBC'} · <span className="font-mono">{leg.external_vehicle_reg || 'Reg TBC'}</span></div><div className="text-xs text-muted-foreground">{leg.operator_phone}</div></div>
           ) : (
-            <div className="mt-1 text-sm"><div className="font-semibold">{leg.driver_name}</div><div className="text-muted-foreground">{leg.vehicle_make} {leg.vehicle_model} · <span className="font-mono font-semibold text-ink">{leg.vehicle_registration}</span></div><div className="text-xs text-muted-foreground">{leg.driver_phone}</div></div>
+            <div className="mt-1 text-sm"><div className="font-semibold">{leg.driver_name}</div><div className="text-muted-foreground">{leg.vehicle_make} {leg.vehicle_model} · <span className="font-mono font-semibold text-ink">{leg.vehicle_registration}</span></div><div className="text-xs text-muted-foreground">{leg.driver_phone}</div>{leg.status === 'assigned' && (leg.driver_accepted_at ? <span className="mt-1.5 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">✓ Accepted by chauffeur</span> : <span className="mt-1.5 inline-flex animate-pulse rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Waiting for chauffeur to accept</span>)}</div>
           )}
           {leg.conflict_override_reason && <div className="mt-2 text-xs text-amber-700">Conflict overridden: {leg.conflict_override_reason}</div>}
           {conflicts.length > 0 && <div className="mt-2 space-y-0.5">{conflicts.map((c) => <div key={c.leg_id} className="text-xs font-medium text-red-600"><AlertTriangle className="mr-1 inline h-3 w-3" />{c.reason} — {c.ref} {shortDateTime(c.pickup_at)}</div>)}</div>}
@@ -251,7 +251,7 @@ function AssignModal({ b, leg, onClose, onSaved }) {
               <Field label="Driver">
                 <SelectInput value={driverId} onChange={(e) => { setDriverId(e.target.value); setConflicts(null); }}>
                   <option value="">Choose a driver…</option>
-                  {o.drivers.map((d) => <option key={d.id} value={d.id} disabled={!d.assignable}>{d.name}{!d.assignable ? ' — unavailable' : d.conflicts.length ? ` — busy (${d.conflicts.map((c) => c.ref).join(', ')})` : ''}</option>)}
+                  {[...o.drivers].sort((a, b) => (b.assignable && !b.conflicts.length) - (a.assignable && !a.conflicts.length)).map((d) => <option key={d.id} value={d.id} disabled={!d.assignable}>{d.name}{!d.assignable ? ' — unavailable' : d.conflicts.length ? ` — busy (${d.conflicts.map((c) => c.ref).join(', ')})` : ' — available ✓'}</option>)}
                 </SelectInput>
               </Field>
               {(vehicle?.conflicts.length > 0 || driver?.conflicts.length > 0) && !conflicts && <Banner tone="amber" icon={AlertTriangle}>This selection overlaps another journey. You will be asked to confirm an override.</Banner>}

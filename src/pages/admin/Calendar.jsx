@@ -23,7 +23,7 @@ export default function Calendar() {
   const [start, setStart] = useState(() => startOfWeek(new Date()));
   const [view, setView] = useState('week');
   const end = new Date(start.getTime() + 7 * 86400000);
-  const { data, isLoading } = useQuery({ queryKey: ['calendar', start.toISOString()], queryFn: () => api.get(`/admin/calendar?from=${start.toISOString()}&to=${end.toISOString()}`), refetchInterval: 30000 });
+  const { data, isLoading } = useQuery({ queryKey: ['calendar', start.toISOString()], queryFn: () => api.get(`/admin/calendar?from=${start.toISOString()}&to=${end.toISOString()}`), refetchInterval: 10000 });
   const days = Array.from({ length: 7 }, (_, i) => new Date(start.getTime() + i * 86400000));
   const fmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
   const byDriver = {};

@@ -1,3 +1,4 @@
+import { useLiveUpdates } from '@/lib/live';
 import { useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ export function RequireManagement() {
 }
 
 function useUnread() {
-  const { data } = useQuery({ queryKey: ['notifications'], queryFn: () => api.get('/account/notifications'), refetchInterval: 30000 });
+  const { data } = useQuery({ queryKey: ['notifications'], queryFn: () => api.get('/account/notifications'), refetchInterval: 10000 });
   return (data || []).filter((n) => !n.read_at).length;
 }
 
@@ -52,7 +53,10 @@ const NAV = [
   ] },
 ];
 
+const adminLink = (n) => `/admin/bookings/${n.booking_id}`;
+
 export function ManagementLayout() {
+  useLiveUpdates(adminLink);
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
@@ -102,7 +106,7 @@ export function ManagementLayout() {
             <Link to="/admin/inbox" className="relative rounded-full p-2 hover:bg-surface" title="Alerts"><Bell className="h-5 w-5" /><Dot n={unread} /></Link>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8"><Outlet /></main>
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8"><div key={loc.pathname} className="page-enter"><Outlet /></div></main>
       </div>
     </div>
   );

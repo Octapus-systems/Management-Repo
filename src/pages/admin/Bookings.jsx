@@ -29,7 +29,7 @@ export default function Bookings() {
   const [org, setOrg] = useState('');
   const [vehicle, setVehicle] = useState('');
   const qs = new URLSearchParams({ ...(status && { status }), ...(q && { q }), sort, ...(from && { from: new Date(from).toISOString() }), ...(to && { to: new Date(new Date(to).getTime() + 86400000).toISOString() }), ...(org && { organisation_id: org }), ...(vehicle && { vehicle_id: vehicle }) }).toString();
-  const { data, isLoading, error } = useQuery({ queryKey: ['bookings', 'admin', qs], queryFn: () => api.get(`/bookings?${qs}`), refetchInterval: 30000 });
+  const { data, isLoading, error } = useQuery({ queryKey: ['bookings', 'admin', qs], queryFn: () => api.get(`/bookings?${qs}`), refetchInterval: 10000 });
   const orgs = useQuery({ queryKey: ['organisations'], queryFn: () => api.get('/admin/organisations') });
   const vehicles = useQuery({ queryKey: ['vehicles'], queryFn: () => api.get('/admin/vehicles') });
   const known = TABS.some((t) => t.key === status);
