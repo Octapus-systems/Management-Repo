@@ -72,14 +72,22 @@ const NUMERIC = [
   ['max_admins', 'Management user limit', 'Per your plan.'],
 ];
 
+const BOOKING_FIELDS = [
+  ['stops', 'Extra pickups / stops'], ['passenger_names', 'Other passenger names'], ['luggage', 'Luggage counts'],
+  ['child_seats', 'Child seats'], ['accessibility_needs', 'Accessibility needs'], ['preferred_category', 'Preferred vehicle'],
+  ['flight_number', 'Flight number (airport)'], ['special_instructions', 'Special instructions'], ['sensitive_notes', 'Private notes for chauffeur'],
+];
+const OnOff = (props) => <SelectInput {...props}><option value="on">On</option><option value="off">Off</option></SelectInput>;
+
 export function Settings() {
   const { data, isLoading } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/admin/settings') });
   const [f, setF] = useState(null);
-  useEffect(() => { if (data) setF({ ...data, vehicle_categories: JSON.parse(data.vehicle_categories || '[]').join('\n') }); }, [data]);
+  useEffect(() => { if (data) setF({ ...data, vehicle_categories: JSON.parse(data.vehicle_categories || '[]').join('\n'), booking_fields: JSON.parse(data.booking_fields || '{}') }); }, [data]);
   const save = useAction((b) => api.put('/admin/settings', b), { success: 'Settings saved.', invalidate: ['settings', 'public-settings'] });
   if (isLoading || !f) return <PageLoader />;
   const bind = (k) => ({ value: f[k] ?? '', onChange: (e) => setF({ ...f, [k]: e.target.value }) });
-  const submit = () => save.mutate({ ...f, vehicle_categories: JSON.stringify(f.vehicle_categories.split('\n').map((s) => s.trim()).filter(Boolean)) });
+  const submit = () => save.mutate({ ...f, vehicle_categories: JSON.stringify(f.vehicle_categories.split('\n').map((s) => s.trim()).filter(Boolean)), booking_fields: JSON.stringify(f.booking_fields) });
+  const toggleField = (k) => setF({ ...f, booking_fields: { ...f.booking_fields, [k]: f.booking_fields[k] === false } });
   return (
     <div className="max-w-4xl space-y-5">
       <PageHeader title="Settings" subtitle="Operational rules. Items still open in the BRD are configurable here rather than hard-coded." actions={<PrimaryButton loading={save.isPending} onClick={submit}>Save settings</PrimaryButton>} />
@@ -101,6 +109,41 @@ export function Settings() {
             <option value="both">Both — invitations and approved registrations</option>
           </SelectInput>
         </Field>
+      </Panel>
+      <Panel title="Booking rules">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Minimum notice (hours before pickup)" hint="Customers can't request journeys sooner than this. Staff bookings may override. 0 = off."><TextInput type="number" min="0" step="0.5" {...bind('min_notice_hours')} /></Field>
+          <Field label="Minimum hourly hire (hours)" hint="Applies to 'as directed' hourly bookings. Staff may override."><TextInput type="number" min="0" step="0.5" {...bind('hourly_min_hours')} /></Field>
+          <Field label="Flight number required for airport transfers"><OnOff {...bind('flight_number_required')} /></Field>
+          <Field label="Start Journey available (minutes before pickup)" hint="Chauffeurs can't press 'On the way' earlier than this. Dispatch can always update. 0 = any time."><TextInput type="number" min="0" {...bind('start_window_minutes')} /></Field>
+        </div>
+        <div className="mt-5">
+          <div className="mb-2 text-sm font-semibold">Fields shown on the customer booking form</div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {BOOKING_FIELDS.map(([k, l]) => (
+              <label key={k} className="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm">
+                <input type="checkbox" className="h-4 w-4 accent-[#FF5A1F]" checked={f.booking_fields[k] !== false} onChange={() => toggleField(k)} />{l}
+              </label>
+            ))}
+          </div>
+        </div>
+      </Panel>
+      <Panel title="Payment rules">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="New bookings default to" hint="Corporate account bookings always use monthly invoicing.">
+            <SelectInput {...bind('default_payment_arrangement')}><option value="pay_before">Pay before the journey (preferred)</option><option value="pay_after">Pay after the journey</option></SelectInput>
+          </Field>
+          <Field label="When payment is outstanding on a pay-before booking" hint="Exception: change that booking's arrangement to 'pay after' — the change is recorded in its history.">
+            <SelectInput {...bind('payment_rule')}><option value="before_start">Block the journey from starting</option><option value="before_assignment">Block driver assignment</option><option value="off">Don't block</option></SelectInput>
+          </Field>
+        </div>
+      </Panel>
+      <Panel title="Customer sign-in">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Book without signing in first" hint="Customers verify their mobile at the end."><OnOff {...bind('guest_booking')} /></Field>
+          <Field label="Mobile number + code sign-in"><OnOff {...bind('otp_login')} /></Field>
+          <Field label="Send codes by" hint="Demo mode until an SMS/WhatsApp provider is connected."><SelectInput {...bind('otp_channel')}><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option></SelectInput></Field>
+        </div>
       </Panel>
       <Panel title="Timings & limits">
         <div className="grid gap-4 sm:grid-cols-2">

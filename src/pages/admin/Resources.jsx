@@ -77,7 +77,7 @@ export function Drivers() {
   return (
     <div>
       <PageHeader title="Drivers" subtitle="Chauffeurs see only the journeys you assign to them. Drivers are added by management — there is no open registration."
-        actions={<Button className="rounded-full" onClick={() => setEdit({})}><Plus />Add driver</Button>} />
+        actions={<div className="flex gap-2"><Button variant="outline" className="rounded-full" onClick={() => setEdit({ driver_type: 'temporary' })}><Plus />Temporary driver</Button><Button className="rounded-full" onClick={() => setEdit({})}><Plus />Add driver</Button></div>} />
       {isLoading ? <PageLoader /> : !data.length ? <Empty icon={Users} title="No drivers yet" /> : (
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -86,7 +86,7 @@ export function Drivers() {
               <tbody className="divide-y">
                 {data.map((d) => (
                   <tr key={d.id}>
-                    <td className="px-4 py-3"><div className="font-semibold">{d.name}</div><div className="text-xs text-muted-foreground">{d.licence_number || 'Licence not recorded'}</div></td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2 font-semibold">{d.name}{d.driver_type === 'temporary' && <Pill tone={d.access_expires_at && new Date(d.access_expires_at) < new Date() ? 'red' : 'blue'}>Temporary</Pill>}</div><div className="text-xs text-muted-foreground">{d.driver_type === 'temporary' && d.access_expires_at ? `Access until ${new Date(d.access_expires_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}` : d.licence_number || 'Licence not recorded'}</div></td>
                     <td className="px-4 py-3"><div>{d.phone}</div><div className="text-xs text-muted-foreground">{d.email}</div></td>
                     <td className="px-4 py-3">
                       <button onClick={() => toggle.mutate({ id: d.id, driver_availability: d.driver_availability === 'available' ? 'unavailable' : 'available' })}>
@@ -109,12 +109,17 @@ export function Drivers() {
 }
 
 function DriverModal({ d, onClose }) {
-  const [f, setF] = useState({ name: '', email: '', phone: '', licence_number: '', notes: '', password: '', status: 'active', driver_availability: 'available', ...d, ...(d.id ? { password: '' } : {}) });
+  const toLocal = (iso) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '');
+  const temporary = d.driver_type === 'temporary';
+  const [f, setF] = useState({ name: '', email: '', phone: '', licence_number: '', notes: '', password: '', status: 'active', driver_availability: 'available', ...d, ...(d.id ? { password: '' } : {}), access_expires_at: toLocal(d.access_expires_at || (temporary ? new Date(Date.now() + 7 * 86400000).toISOString() : '')) });
   const save = useAction((body) => (d.id ? api.patch(`/admin/drivers/${d.id}`, body) : api.post('/admin/drivers', body)), { success: 'Saved.', invalidate: ['drivers'], onSuccess: onClose });
   const bind = (k) => ({ value: f[k] ?? '', onChange: (e) => setF({ ...f, [k]: e.target.value }), invalid: !!save.fields[k] });
-  const body = d.id ? { name: f.name, phone: f.phone, licence_number: f.licence_number, notes: f.notes, status: f.status, driver_availability: f.driver_availability, ...(f.password ? { password: f.password } : {}) } : f;
+  const expiry = temporary && f.access_expires_at ? new Date(f.access_expires_at).toISOString() : undefined;
+  const body = d.id
+    ? { name: f.name, phone: f.phone, licence_number: f.licence_number, notes: f.notes, status: f.status, driver_availability: f.driver_availability, ...(f.password ? { password: f.password } : {}), ...(temporary ? { access_expires_at: expiry } : {}) }
+    : { ...f, access_expires_at: expiry };
   return (
-    <Modal open onOpenChange={onClose} title={d.id ? `Edit ${d.name}` : 'Add driver'} description={d.id ? undefined : 'Share the email and temporary password with the driver so they can sign in.'}
+    <Modal open onOpenChange={onClose} title={d.id ? `Edit ${d.name}` : temporary ? 'Add temporary driver' : 'Add driver'} description={d.id ? undefined : temporary ? 'For cover when the regular fleet is unavailable. They see only the journeys you assign, and their sign-in stops working after the end date.' : 'Share the email and temporary password with the driver so they can sign in.'}
       footer={<PrimaryButton loading={save.isPending} onClick={() => save.mutate(body)}>Save</PrimaryButton>}>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Full name" error={save.fields.name}><TextInput {...bind('name')} /></Field>
@@ -122,6 +127,7 @@ function DriverModal({ d, onClose }) {
         {!d.id && <Field label="Email (sign-in)" error={save.fields.email}><TextInput type="email" {...bind('email')} /></Field>}
         <Field label={d.id ? 'Reset password (optional)' : 'Temporary password'} error={save.fields.password}><TextInput type="text" autoComplete="new-password" {...bind('password')} /></Field>
         <Field label="Driving licence no."><TextInput {...bind('licence_number')} /></Field>
+        {temporary && <Field label="Access ends" error={save.fields.access_expires_at} hint="Extend or shorten any time"><TextInput type="datetime-local" {...bind('access_expires_at')} /></Field>}
         {d.id && <Field label="Availability"><SelectInput {...bind('driver_availability')}><option value="available">Available</option><option value="unavailable">Unavailable</option></SelectInput></Field>}
         {d.id && <Field label="Account"><SelectInput {...bind('status')}><option value="active">Active</option><option value="suspended">Suspended</option></SelectInput></Field>}
         <Field label="Notes" className="sm:col-span-2"><TextArea rows={2} {...bind('notes')} /></Field>

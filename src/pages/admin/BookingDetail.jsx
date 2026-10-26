@@ -393,6 +393,11 @@ function PaymentPanel({ b, onChange, accepted }) {
   return (
     <Panel title="Payment" actions={<PaymentBadge status={b.payment_status} />}>
       <div className="space-y-3 text-sm">
+        {b.payment_outstanding && b.payment_rule !== 'off' && (
+          <Banner tone="amber" title={b.payment_rule === 'before_assignment' ? 'Unpaid — driver assignment is blocked' : 'Unpaid — the journey cannot start'}>
+            Record the payment or send a payment link. To make an exception, change the arrangement to “pay after”.
+          </Banner>
+        )}
         <div className="flex justify-between"><span className="text-muted-foreground">Agreed price</span><b>{b.agreed_total != null ? gbp(b.agreed_total) : '—'}</b></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Received</span><b>{gbp(received)}</b></div>
         <Field label="Arrangement"><SelectInput value={b.payment_arrangement} onChange={(e) => arrM.mutate({ payment_arrangement: e.target.value })}>{Object.entries(PAYMENT_ARRANGEMENT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</SelectInput></Field>
