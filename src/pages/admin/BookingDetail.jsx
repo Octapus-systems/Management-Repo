@@ -6,6 +6,7 @@ import {
   Plus, Receipt, Send, Trash2, UserCheck, Users, XCircle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { celebrate, sparkle } from '@/lib/fx';
 import {
   ACTIVITY_LABEL, BOOKING_STATUS_OPTIONS, JOURNEY_TYPES, LEG_STATUS, PAYMENT_ARRANGEMENT, PAYMENT_METHOD, PAYMENT_STATUS, STATUS, dateTime, gbp,
   driveTime, miles, shortDateTime, toLocalInput,
@@ -31,7 +32,7 @@ export default function BookingDetail() {
 
   const review = useAct('/review', { success: 'Marked as under review.' });
   const message = useAct('/messages');
-  const confirm = useAct('/confirm', { success: 'Booking confirmed — customer notified.', onError: (e) => { if (e.body.code === 'needs_override') { setModal('confirm'); return true; } } });
+  const confirm = useAct('/confirm', { success: 'Booking confirmed — customer notified.', onSuccess: () => celebrate(), onError: (e) => { if (e.body.code === 'needs_override') { setModal('confirm'); return true; } } });
   const reject = useAct('/reject', { success: 'Request rejected.' });
   const cancel = useAct('/cancel', { success: 'Booking cancelled.' });
   const close = useAct('/close', { success: 'Booking closed.', onError: (e) => { if (e.body.code === 'unpaid') { setModal('close-unpaid'); return true; } } });
@@ -217,7 +218,7 @@ function AssignModal({ b, leg, onClose, onSaved }) {
   const [override, setOverride] = useState('');
   const save = useAction((body) => api.post(`/bookings/${b.id}/legs/${leg.id}/assign`, body), {
     success: 'Assignment saved — driver and customer notified.',
-    onSuccess: onSaved,
+    onSuccess: (...a) => { sparkle(document.activeElement); onSaved(...a); },
     onError: (e) => { if (e.body.code === 'assignment_conflict') { setConflicts(e.body.conflicts); return true; } },
   });
   const o = opts.data;
