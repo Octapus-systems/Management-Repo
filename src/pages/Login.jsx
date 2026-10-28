@@ -43,7 +43,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_100%,rgba(255,113,15,0.35),transparent_55%)]" />
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <img src="/images/logo.png" alt="Encore" className="h-11 w-11 rounded-xl object-contain" />
+            <img src="/images/logo.svg" alt="Encore" className="h-11 w-11 object-contain" />
             <div className="leading-tight">
               <div className="font-heading text-lg font-bold tracking-[0.18em]">ENCORE</div>
               <div className="text-[10px] font-semibold tracking-[0.35em] text-orange-300">EXECUTIVE</div>
@@ -69,7 +69,7 @@ export default function Login() {
       {/* Form */}
       <div className="flex flex-col bg-[#F6F6F8]">
         <div className="flex items-center gap-3 bg-[#0b0b0c] px-6 py-5 lg:hidden">
-          <img src="/images/logo.png" alt="Encore" className="h-9 w-9 rounded-lg object-contain" />
+          <img src="/images/logo.svg" alt="Encore" className="h-9 w-9 object-contain" />
           <div className="font-heading text-sm font-bold tracking-[0.18em] text-white">ENCORE · COMMAND CENTER</div>
         </div>
         <div className="flex flex-1 items-center justify-center px-6 py-12">
